@@ -1,9 +1,10 @@
 import math, copy, random
+random.seed(123)
 
-def SIGMOID(p):
+def SIGMOID(p, s):
     def g(a):
         # asymptotes at -1 and +1
-        return 2.0 / (1.0 + math.e ** (-a / p)) - 1.0
+        return 1.0 / (1.0 + math.e ** (-a / p)) + s
     return g
 
 class Connection(object):
@@ -21,7 +22,7 @@ class Neuron(object):
     connections = []
     sigmoid = None
 
-    def __init__(self, connections, sig=SIGMOID(1)):
+    def __init__(self, connections, sig):
         assert isinstance(connections, list)
         self.connections = connections
         self.sigmoid = sig
@@ -54,8 +55,8 @@ class NeuralNet(object):
     hidden_layers = []
     sigmoid = None
 
-    def __init__(self, num_inputs, num_outputs, hidden_dimensions, sigmoid_p = 1.0):
-        self.sigmoid = SIGMOID(sigmoid_p)
+    def __init__(self, num_inputs, num_outputs, hidden_dimensions, sigmoid_p=1.0, sigmoid_s=0.0):
+        self.sigmoid = SIGMOID(sigmoid_p, sigmoid_s)
         self.output_layer = self.__init_layer(num_outputs, [])
         num_hidden_layers = len(hidden_dimensions)
         hidden_layers = [None] * num_hidden_layers
@@ -72,7 +73,7 @@ class NeuralNet(object):
         layer = [None] * layer_size
         for i in xrange(layer_size):
             # Weights default to 1
-            layer[i] = Neuron([Connection(neuron, 1) for neuron in outbound_layer], sig=self.sigmoid)
+            layer[i] = Neuron([Connection(neuron, random.uniform(-1.0, 1.0)) for neuron in outbound_layer], sig=self.sigmoid)
         return layer
 
     def __reset(self):
@@ -122,7 +123,6 @@ class NeuralNet(object):
             self.__validate_expected_outputs(expected_outputs)
 
         initial_squared_error = self.get_training_data_squared_error(training_data)
-        print 'initial_squared_error', initial_squared_error
 
         connections = self.get_connections()
         connection_gradient = [0] * len(connections)
@@ -134,15 +134,16 @@ class NeuralNet(object):
             squared_error = self.get_training_data_squared_error(training_data)
             connection.weight = initial_weight
             connection_gradient[i] = initial_squared_error - squared_error
-        print connection_gradient
         # weight vector advances by norm == step
         cur_norm = math.sqrt(sum([x ** 2 for x in connection_gradient]))
+        if (cur_norm == 0):
+            return squared_error
         adjustment = step / cur_norm
         for i in xrange(len(connections)):
             connections[i].weight += connection_gradient[i] * adjustment
 
         squared_error = self.get_training_data_squared_error(training_data)
-        print 'final_squared_error', squared_error
+        return squared_error
 
     def get_connections(self):
         connections = []
