@@ -1,4 +1,4 @@
-import math
+import math, copy
 
 def SIGMOID(p):
     def g(a):
@@ -15,6 +15,9 @@ class Neuron(object):
         assert isinstance(outbound, list)
         self.outbound = outbound
         self.sigmoid = sig
+
+    def get_activation(self):
+        return self.activation
 
     def propagate(self):
         self_output = self.sigmoid(self.activation)
@@ -36,8 +39,10 @@ class NeuralNet(object):
     input_layer = []
     output_layer = []
     hidden_layers = []
+    sigmoid = None
 
-    def __init__(self, num_inputs, num_outputs, hidden_dimensions):
+    def __init__(self, num_inputs, num_outputs, hidden_dimensions, sigmoid_p = 1.0):
+        self.sigmoid = SIGMOID(sigmoid_p)
         self.output_layer = self.__init_layer(num_outputs, [])
         num_hidden_layers = len(hidden_dimensions)
         hidden_layers = [None] * num_hidden_layers
@@ -54,7 +59,7 @@ class NeuralNet(object):
         layer = [None] * layer_size
         for i in xrange(layer_size):
             # Weights default to 1
-            layer[i] = Neuron(zip(outbound_layer, [1] * len(outbound_layer)))
+            layer[i] = Neuron(zip(outbound_layer, [1] * len(outbound_layer)), sig=self.sigmoid)
         return layer
 
     def __reset(self):
@@ -72,6 +77,7 @@ class NeuralNet(object):
         for layer in self.hidden_layers:
             for neuron in layer:
                 neuron.propagate()
+
     def __set_inputs(self, inputs):
         for i in xrange(len(inputs)):
             neuron = self.input_layer[i]
@@ -84,7 +90,9 @@ class NeuralNet(object):
             'expecting {0} inputs but got {1}'.format(len(self.input_layer), len(inputs))
         self.__set_inputs(inputs)
         self.__propagate_all_layers()
-        return self.output_layer
+        output = [neuron.get_activation() for neuron in self.output_layer]
+        self.__reset()
+        return output
 
     def __str__(self):
         string = 'input ({0}): '.format(len(self.input_layer))
