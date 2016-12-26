@@ -1,4 +1,4 @@
-import unittest
+import unittest, math
 from nn import Neuron, NeuralNet, SIGMOID
 
 class TestNeuralNet(unittest.TestCase):
@@ -30,6 +30,16 @@ class TestNeuralNet(unittest.TestCase):
         nn = NeuralNet(2, 2, [2])
         sigmoid = SIGMOID(1.0)
         self.assertEqual(nn.intake([1.1, 1.1]), [sigmoid(sigmoid(1.1) * 2) * 2] * 2 )
+
+    def test_error_calculation(self):
+        expected = [1,2,3]
+        actual = [3,2,1]
+        self.assertAlmostEqual(NeuralNet.error(expected, actual), math.sqrt(8), 10)
+
+    def test_squared_error_calculation(self):
+        expected_list = [[1,2,3], [2,3,4]]
+        actual_list = [[3,2,1], [3,4,5]]
+        self.assertAlmostEqual(NeuralNet.squared_error(zip(expected_list, actual_list)), 11, 10)
 
 if __name__ == '__main__':
     unittest.main()

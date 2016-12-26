@@ -1,8 +1,9 @@
-import math, copy
+import math, copy, random
 
 def SIGMOID(p):
     def g(a):
-        return 1.0 / (1.0 + math.e ** (-a / p))
+        # asymptotes at -1 and +1
+        return 2.0 / (1.0 + math.e ** (-a / p)) - 1.0
     return g
 
 class Connection(object):
@@ -10,7 +11,7 @@ class Connection(object):
     weight = None
     def __init__(self, target, weight):
         assert isinstance(target, Neuron)
-        assert isinstance(weight, int)
+        assert isinstance(weight, int) or isinstance(weight, float)
         self.target = target
         self.weight = weight
 
@@ -28,6 +29,9 @@ class Neuron(object):
     def get_activation(self):
         return self.activation
 
+    def get_connections(self):
+        return self.connections
+
     def propagate(self):
         self_output = self.sigmoid(self.activation)
         for connection in self.connections:
@@ -41,7 +45,7 @@ class Neuron(object):
         self.activation = 0
 
     def __str__(self):
-        return '[' + str(self.activation) + ' - ' + str(id(self))[-4:] + ']'
+        return '{' + str(self.activation) + '-' + str([str(con.weight) for con in self.connections]) + '}'
 
 class NeuralNet(object):
     """Fully connected for now"""
@@ -107,6 +111,48 @@ class NeuralNet(object):
         self.__reset()
         return output
 
+    def get_training_data_squared_error(self, training_data):
+        expected_and_actual_list = [(expected_outputs, self.intake(inputs)) for (inputs, expected_outputs) in training_data]
+        return NeuralNet.squared_error(expected_and_actual_list)
+
+    def train(self, training_data, step=0.01):
+        assert isinstance(training_data, list)
+        for (inputs, expected_outputs) in training_data:
+            self.__validate_inputs(inputs)
+            self.__validate_expected_outputs(expected_outputs)
+
+        initial_squared_error = self.get_training_data_squared_error(training_data)
+        print 'initial_squared_error', initial_squared_error
+
+        connections = self.get_connections()
+        connection_gradient = [0] * len(connections)
+        for i in xrange(len(connections)):
+            connection = connections[i]
+            initial_weight = connection.weight
+            # each weight advances step / 128
+            connection.weight += step / 128.0
+            squared_error = self.get_training_data_squared_error(training_data)
+            connection.weight = initial_weight
+            connection_gradient[i] = initial_squared_error - squared_error
+        print connection_gradient
+        # weight vector advances by norm == step
+        cur_norm = math.sqrt(sum([x ** 2 for x in connection_gradient]))
+        adjustment = step / cur_norm
+        for i in xrange(len(connections)):
+            connections[i].weight += connection_gradient[i] * adjustment
+
+        squared_error = self.get_training_data_squared_error(training_data)
+        print 'final_squared_error', squared_error
+
+    def get_connections(self):
+        connections = []
+        for neuron in self.input_layer:
+            connections.extend(neuron.get_connections())
+        for layer in self.hidden_layers:
+            for neuron in layer:
+                connections.extend(neuron.get_connections())
+        return connections
+
     def __validate_inputs(self, inputs):
         assert len(inputs) == len(self.input_layer),\
             'expecting {0} inputs but got {1}'.format(len(self.input_layer), len(inputs))
@@ -114,6 +160,16 @@ class NeuralNet(object):
     def __validate_expected_outputs(self, outputs):
         assert len(outputs) == len(self.output_layer),\
             'expecting {0} outputs but got {1}'.format(len(self.output_layer), len(outputs))
+
+    @staticmethod
+    def error(expected_outputs, actual_outputs):
+        assert len(expected_outputs) == len(actual_outputs)
+        return math.sqrt(sum([(expected - actual) ** 2 for (expected, actual) in zip(expected_outputs, actual_outputs)]))
+
+    @staticmethod
+    def squared_error(expected_and_actual_list):
+        return sum([NeuralNet.error(expected_outputs, actual_outputs) ** 2\
+            for (expected_outputs, actual_outputs) in expected_and_actual_list])
 
     def __str__(self):
         string = 'input ({0}): '.format(len(self.input_layer))
