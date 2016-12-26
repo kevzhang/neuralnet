@@ -8,4 +8,3 @@ nn.intake([0,0,0])
 print nn
 
 print SIGMOID(1)(1.5) * 3
-
