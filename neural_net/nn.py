@@ -3,7 +3,7 @@ random.seed(123)
 
 def SIGMOID(p, s):
     def g(a):
-        # asymptotes at -1 and +1
+        # asymptotes at -1 and +1 without offset
         return 1.0 / (1.0 + math.e ** (-a / p)) + s
     return g
 
@@ -48,15 +48,20 @@ class Neuron(object):
     def __str__(self):
         return '{' + str(self.activation) + '-' + str([str(con.weight) for con in self.connections]) + '}'
 
+def random_weight_provider():
+    return random.uniform(-1.0, 1.0)
+
 class NeuralNet(object):
     """Fully connected for now"""
     input_layer = []
     output_layer = []
     hidden_layers = []
     sigmoid = None
+    weight_provider = None
 
-    def __init__(self, num_inputs, num_outputs, hidden_dimensions, sigmoid_p=1.0, sigmoid_s=0.0):
+    def __init__(self, num_inputs, num_outputs, hidden_dimensions, sigmoid_p=1.0, sigmoid_s=0.0, weight_provider=random_weight_provider):
         self.sigmoid = SIGMOID(sigmoid_p, sigmoid_s)
+        self.weight_provider = weight_provider
         self.output_layer = self.__init_layer(num_outputs, [])
         num_hidden_layers = len(hidden_dimensions)
         hidden_layers = [None] * num_hidden_layers
@@ -73,7 +78,7 @@ class NeuralNet(object):
         layer = [None] * layer_size
         for i in xrange(layer_size):
             # Weights default to 1
-            layer[i] = Neuron([Connection(neuron, random.uniform(-1.0, 1.0)) for neuron in outbound_layer], sig=self.sigmoid)
+            layer[i] = Neuron([Connection(neuron, self.weight_provider()) for neuron in outbound_layer], sig=self.sigmoid)
         return layer
 
     def __reset(self):
