@@ -1,5 +1,5 @@
-from nn import Neuron, NeuralNet, SIGMOID
-from trainer import train_until
+from neural_net.nn import Neuron, NeuralNet, SIGMOID
+from neural_net.trainer import train_until
 
 nn = NeuralNet(8, 5, [])
 print nn
