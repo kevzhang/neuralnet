@@ -1,3 +1,4 @@
+# Doesn't really work
 from neural_net.nn import Neuron, NeuralNet, SIGMOID
 from neural_net.trainer import train_until
 
