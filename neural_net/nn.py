@@ -1,4 +1,6 @@
 import math, copy, random
+from pathos.multiprocessing import Pool
+
 random.seed(123)
 
 def SIGMOID(p, s):
@@ -47,6 +49,20 @@ class Neuron(object):
 
     def __str__(self):
         return '{' + str(self.activation) + '-' + str([str(con.weight) for con in self.connections]) + '}'
+
+def compute_connection_gradient(args):
+    neural_net = args['neural_net']
+    idx = args['connection_idx']
+    step = args['step']
+    training_data = args['training_data']
+
+    connection = neural_net.get_connections()[idx]
+    initial_weight = connection.weight
+    # each weight advances step / 128
+    connection.weight += step / 128.0
+    squared_error = neural_net.get_training_data_squared_error(training_data)
+    connection.weight = initial_weight
+    return squared_error
 
 def random_weight_provider():
     return random.uniform(-1.0, 1.0)
@@ -121,6 +137,9 @@ class NeuralNet(object):
         expected_and_actual_list = [(expected_outputs, self.intake(inputs)) for (inputs, expected_outputs) in training_data]
         return NeuralNet.squared_error(expected_and_actual_list)
 
+    def copy_self(self):
+        return copy.deepcopy(self)
+
     def train(self, training_data, step=0.01):
         assert isinstance(training_data, list)
         for (inputs, expected_outputs) in training_data:
@@ -130,22 +149,27 @@ class NeuralNet(object):
         initial_squared_error = self.get_training_data_squared_error(training_data)
 
         connections = self.get_connections()
-        connection_gradient = [0] * len(connections)
-        for i in xrange(len(connections)):
-            connection = connections[i]
-            initial_weight = connection.weight
-            # each weight advances step / 128
-            connection.weight += step / 128.0
-            squared_error = self.get_training_data_squared_error(training_data)
-            connection.weight = initial_weight
-            connection_gradient[i] = initial_squared_error - squared_error
+        num_connections = len(connections)
+        # neural_net_copies = [self.copy_self for _ in range(num_connections)]
+
+        worker_args = []
+        for idx in range(num_connections):
+            worker_args.append({
+                'neural_net': self,
+                'connection_idx': idx,
+                'step': step,
+                'training_data': training_data
+            })
+
+        connection_gradients = [initial_squared_error - sq_err for sq_err in pool.map(compute_connection_gradient, worker_args)]
+
         # weight vector advances by norm == step
-        cur_norm = math.sqrt(sum([x ** 2 for x in connection_gradient]))
+        cur_norm = math.sqrt(sum([x ** 2 for x in connection_gradients]))
         if (cur_norm == 0):
-            return squared_error
+            return initial_squared_error
         adjustment = step / cur_norm
-        for i in xrange(len(connections)):
-            connections[i].weight += connection_gradient[i] * adjustment
+        for i in xrange(num_connections):
+            connections[i].weight += connection_gradients[i] * adjustment
 
         squared_error = self.get_training_data_squared_error(training_data)
         return squared_error
@@ -193,3 +217,5 @@ class NeuralNet(object):
             string += str(neuron)
         string += '\n'
         return string
+
+pool = Pool(4)

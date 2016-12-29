@@ -39,7 +39,7 @@ def train_until(neural_net, training_data, initial_step=0.1, threshold=0.1):
         if squared_error < prev_squared_error:
             current_step *= 1.2
         else:
-            current_step /= 2
+            current_step /= 4
         prev_squared_error = squared_error
 
 
