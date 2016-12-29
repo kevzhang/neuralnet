@@ -1,249 +1,268 @@
 from neural_net.nn import Neuron, NeuralNet, SIGMOID
 from neural_net.trainer import train_until
+import copy, random
+random.seed(42)
 
-training_data = [
-    (
-        '........' +
-        '.x...x..' + 
-        '..x.x...' + 
-        '...x....' + 
-        '..x.x...' + 
-        '.x...x..' + 
-        '........' +
-        '........',
-        True
-    ),
-    (
-        '........' +
-        '..x...x.' + 
-        '...x.x..' + 
-        '....x...' + 
-        '...x.x..' + 
-        '..x...x.' + 
-        '........' +
-        '........',
-        True
-    ),
-    (
-        '........' +
-        '........' +
-        '..x...x.' + 
-        '...x.x..' + 
-        '....x...' + 
-        '...x.x..' + 
-        '..x...x.' + 
-        '........',
-        True
-    ),
-    (
-        '........' +
-        '........' +
-        '.x...x..' + 
-        '..x.x...' + 
-        '...x....' + 
-        '..x.x...' + 
-        '.x...x..' + 
-        '........',
-        True
-    ),
-    (
-        'x.....x.' +
-        '.x...x..' + 
-        '..x.x...' + 
-        '...x....' + 
-        '..x.x...' + 
-        '.x...x..' + 
-        'x.....x.' +
-        '........',
-        True
-    ),
-    (
-        '.x.....x' +
-        '..x...x.' + 
-        '...x.x..' + 
-        '....x...' + 
-        '...x.x..' + 
-        '..x...x.' + 
-        '.x.....x' +
-        '........',
-        True
-    ),
-    (
-        '........' +
-        '.x.....x' +
-        '..x...x.' + 
-        '...x.x..' + 
-        '....x...' + 
-        '...x.x..' + 
-        '..x...x.' + 
-        '.x.....x',
-        True
-    ),
-    (
-        '........' +
-        'x......x' +
-        '.x...x..' + 
-        '..x.x...' + 
-        '...x....' + 
-        '..x.x...' + 
-        '.x...x..' + 
-        'x.....x.',
-        True
-    ),
-    (
-        '........' +
-        '...xx...' +
-        '.x...xx.' + 
-        'x....x..' + 
-        'x.xx..x.' + 
-        '.x......' + 
-        '..x.x...' + 
-        'x.....x.',
-        False
-    ),
-    (
-        '.......x' +
-        '...xx...' +
-        '.xx..xx.' + 
-        'x....x..' + 
-        'x.xx..x.' + 
-        '.x......' + 
-        '..x.x...' + 
-        '......x.',
-        False
-    ),
-    (
-        '........' +
-        '..xxx...' +
-        '.x...x..' + 
-        'xxxxxxx.' + 
-        'x.....x.' + 
-        '.x...x..' + 
-        '..xxx...' + 
-        '........',
-        False
-    ),
-    (
-        '........' +
-        '..xxx...' +
-        '.x...x..' + 
-        'x.....x.' + 
-        'x.....x.' + 
-        '.x...x..' + 
-        '..xxx...' + 
-        '........',
-        False
-    ),
-    (
-        '........' +
-        'xxx.xxxx' +
-        '.xxxxx..' + 
-        '..xxx...' + 
-        '..xxx...' + 
-        '..xxx...' + 
-        '.xxxxx..' + 
-        'xxx.xxx.',
-        False
-    )
-]
+width = 8
+height = 8
 
-def chunks(l, n):
-    for idx in range(0, len(l), n):
-        yield l[idx:idx + n]
+x_val = 1
+o_val = 0
 
-def image_to_input(image):
-    return [-1.0 if c == '.' else 1.0 for c in image]
-
-nn_training_data = [(image_to_input(image), [1] if result else [-1]) for (image, result) in training_data]
+true_val = 2
+false_val = 0
 
 #works well!
-nn = NeuralNet(64, 1, [16], sigmoid_s=-0.5)
+nn = NeuralNet(width * height, 1, [16], sigmoid_s=-0.5)
 
-print nn
+def to_nn_data(raw_training_data):
+    return [(image_to_input(image), [true_val] if result else [false_val]) for (image, result) in raw_training_data]
 
-def to_digit_list(string):
-    return [int(ch) for ch in string]
+def duplicate_and_shift(image, result):
+    img_height = len(image)
+    img_width = len(image[0])
+    heightD = height - img_height
+    widthD = width - img_width
+    shifted = []
+    for row_offset in range(heightD + 1):
+        for col_offset in range(widthD + 1):
+            right_cols = width - img_width - col_offset
+            bot_rows = height - img_height - row_offset
+            shifted_image = copy.copy(image)
+            # fill with left and right columns
+            for imgR in range(len(shifted_image)):
+                shifted_image[imgR] = col_offset * '.' + shifted_image[imgR] + right_cols * '.'
+            shifted_image = row_offset * ['.' * width] + shifted_image + bot_rows * ['.' * width]
+            shifted.append((shifted_image, result))
+    return shifted
 
-def to_digit_string(number, num_digits):
-    return ('{0:0' + str(num_digits) + 'b}').format(number)
+def get_random_image():
+    img = []
+    for _ in range(height):
+        img.append(''.join(['x' if random.randint(0, 1) else '.' for _ in range(width)]))
+    return img
 
-train_until(nn, nn_training_data, initial_step=0.5, threshold=0.01)
+training_data = []
+training_data.extend(duplicate_and_shift(
+    [
+        'x.x',
+        '.x.',
+        'x.x'
+    ],
+    True
+))
+training_data.extend(duplicate_and_shift(
+    [
+        'x...x',
+        '.x.x.',
+        '..x..',
+        '.x.x.',
+        'x...x'
+    ],
+    True
+))
+training_data.extend(duplicate_and_shift(
+    [
+        'x.....x',
+        '.x...x.',
+        '..x.x..',
+        '...x...',
+        '..x.x..',
+        '.x...x.',
+        'x.....x'
+    ],
+    True
+))
+training_data.extend([(get_random_image(), False) for _ in range(len(training_data))])
+
+def image_to_input(image):
+    str_img = ''.join(image)
+    return [-1.0 if c == '.' else 1.0 for c in str_img]
+
+nn_training_data = to_nn_data(training_data)
+print '|training_data|', len(training_data)
+train_until(nn, nn_training_data, initial_step=0.5, threshold=0.1)
 
 test_data = [
     (
-        '........' +
-        '........' + 
-        '..x.x...' + 
-        '...x....' + 
-        '..x.x...' + 
-        '........' + 
-        '........' +
-        '........',
+        [
+            'x.....x.',
+            '.x...x..',
+            '..x.x...',
+            '...x....',
+            '..x.....',
+            '.x...x..',
+            'x.....x.',
+            '........'
+        ],
         True
     ),
     (
-        '..x.....' +
-        '..x.....' + 
-        '..x.x...' + 
-        '........' + 
-        '..x.x...' + 
-        '..x.x...' + 
-        '..x.x...' +
-        '........',
+        [
+            '........',
+            '..x..x..',
+            '..x.x...',
+            '...x....',
+            '..x.x...',
+            '.x...x..',
+            '........',
+            '........'
+        ],
+        True
+    ),
+    (
+        [
+            'x......x',
+            '........',
+            '..xxx...',
+            '..xxx...',
+            '..xxx...',
+            '........',
+            '........',
+            'x......x'
+        ],
         False
     ),
     (
-        '........' +
-        '..x...x.' + 
-        '...x.x..' + 
-        '....x...' + 
-        '...x.x..' + 
-        '..x...x.' + 
-        '........' +
-        '........',
+        [
+            '........',
+            '.x......',
+            '..x...x.',
+            '...x.x..',
+            '...xx...',
+            '...x.x..',
+            '..x...x.',
+            '.x.....x'
+        ],
         True
     ),
     (
-        '........' +
-        '........' +
-        '..xxxxx.' + 
-        '..x...x.' + 
-        '..x...x.' + 
-        '..x...x.' + 
-        '..xxxxx.' + 
-        '........',
+        [
+            '........',
+            '.xxxxxx.',
+            '..x...x.',
+            '...x.x..',
+            '...xx...',
+            '...x.x..',
+            '..x...x.',
+            '.xxxxxxx'
+        ],
         False
     ),
     (
-        '........' +
-        '........' +
-        '.x...x..' + 
-        '..x.x...' + 
-        '...x....' + 
-        '..x.x...' + 
-        '.x...x..' + 
-        '........',
+        [
+            '........',
+            '...xxx..',
+            '..x...x.',
+            '.x.....x',
+            '.x.....x',
+            '..x...x.',
+            '...xxx..',
+            '........'
+        ],
+        False
+    ),
+    (
+        [
+            '........',
+            '.xxxxxx.',
+            '..x...x.',
+            '...x....',
+            '........',
+            '...x.x..',
+            '..x...x.',
+            '.xxxxxxx'
+        ],
+        False
+    ),
+    (
+        [
+            '........',
+            '........',
+            '........',
+            '........',
+            '........',
+            '........',
+            '........',
+            '........'
+        ],
+        False
+    ),
+
+    (
+        [
+            'xxxxxxxx',
+            'xxxxxxxx',
+            'xxxxxxxx',
+            'xxxxxxxx',
+            'xxxxxxxx',
+            'xxxxxxxx',
+            'xxxxxxxx',
+            'xxxxxxxx'
+        ],
+        False
+    ),
+    (
+        [
+            '........',
+            '..xxx...',
+            '....x...',
+            '..xxx...',
+            '....x...',
+            '..xxx...',
+            '........',
+            '........'
+        ],
+        False
+    ),
+    (
+        [
+            '........',
+            '..xxxx..',
+            '..x.....',
+            '..xxxx..',
+            '.....x..',
+            '.....x..',
+            '..xxx...',
+            '........'
+        ],
+        False
+    ),
+    (
+        [
+            '........',
+            '........',
+            '..x.....',
+            '...x...x',
+            '....x.x.',
+            '....xx..',
+            '...x..x.',
+            '..x....x'
+        ],
         True
     ),
     (
-        '........' +
-        '.x......' +
-        '.xxxxx..' + 
-        '........' + 
-        '........' + 
-        '..x.xx..' + 
-        '.x...x..' + 
-        '........',
+        [
+            '........',
+            '.x...x..',
+            '..x.x...',
+            '...x....',
+            '..x.x...',
+            '.x...x..',
+            '........',
+            '........'
+        ],
         True
     )
 ]
 
 for i in range(len(test_data)):
     (image, result) = test_data[i]
-    print '\n'.join(list(chunks(image, 8)))
+    print '\n'.join(image)
     print '\n=\n'
     print nn.intake(image_to_input(image))
     print '\n'
 
-nn_testing_data = [(image_to_input(image), [1] if result else [-1]) for (image, result) in test_data]
+nn_testing_data = to_nn_data(test_data)
+print nn
 print 'test_squared_error', nn.get_training_data_squared_error(nn_testing_data)
