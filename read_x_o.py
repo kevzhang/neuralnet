@@ -9,11 +9,10 @@ height = 8
 x_val = 1
 o_val = 0
 
-true_val = 2
+true_val = 1
 false_val = 0
 
-#works well!
-nn = NeuralNet(width * height, 1, [], sigmoid_s=-0.5)
+nn = NeuralNet(width * height, 1, [], sigmoid_s=0)
 
 def to_nn_data(raw_training_data):
     return [(image_to_input(image), [true_val] if result else [false_val]) for (image, result) in raw_training_data]
@@ -73,7 +72,56 @@ training_data.extend(duplicate_and_shift(
     ],
     True
 ))
-training_data.extend([(get_random_image(), False) for _ in range(len(training_data))])
+training_data.extend(duplicate_and_shift(
+    [
+        'xxxx',
+        'xxxx',
+        'xxxx',
+        'xxxx'
+    ],
+    False
+))
+training_data.extend(duplicate_and_shift(
+    [
+        'xxxxxxxx',
+        'xxxxxxxx',
+        'xxxxxxxx',
+        'xxxxxxxx',
+        'xxxxxxxx',
+        'xxxxxxxx',
+        'xxxxxxxx',
+        'xxxxxxxx'
+    ],
+    False
+))
+training_data.extend(duplicate_and_shift(
+    [
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ],
+    False
+))
+training_data.extend(duplicate_and_shift(
+    [
+        '..x..',
+        '.x.x.',
+        'x...x',
+        '.x.x.',
+        '..x..'
+    ],
+    False
+))
+
+num_positive_examples = len([x[1] for x in training_data if x[1]])
+num_negative_examples = len([x[1] for x in training_data if not x[1]])
+
+training_data.extend([(get_random_image(), False) for _ in range(num_positive_examples - num_negative_examples)])
 
 def image_to_input(image):
     str_img = ''.join(image)
@@ -84,32 +132,6 @@ print '|training_data|', len(training_data)
 train_until(nn, nn_training_data, initial_step=0.5, threshold=2)
 
 test_data = [
-    (
-        [
-            'x.....x.',
-            '.x...x..',
-            '..x.x...',
-            '...x....',
-            '..x.....',
-            '.x...x..',
-            'x.....x.',
-            '........'
-        ],
-        True
-    ),
-    (
-        [
-            '........',
-            '..x..x..',
-            '..x.x...',
-            '...x....',
-            '..x.x...',
-            '.x...x..',
-            '........',
-            '........'
-        ],
-        True
-    ),
     (
         [
             'x......x',
@@ -126,26 +148,13 @@ test_data = [
     (
         [
             '........',
-            '.x......',
+            '...xxx..',
             '..x...x.',
             '...x.x..',
             '...xx...',
             '...x.x..',
             '..x...x.',
-            '.x.....x'
-        ],
-        True
-    ),
-    (
-        [
-            '........',
-            '.xxxxxx.',
-            '..x...x.',
-            '...x.x..',
-            '...xx...',
-            '...x.x..',
-            '..x...x.',
-            '.xxxxxxx'
+            '..xxxxx.'
         ],
         False
     ),
@@ -166,11 +175,11 @@ test_data = [
         [
             '........',
             '.xxxxxx.',
-            '..x...x.',
-            '...x....',
-            '........',
-            '...x.x..',
-            '..x...x.',
+            '.xx...x.',
+            '.x.x....',
+            '.x......',
+            '.x.x.x..',
+            '.xx...x.',
             '.xxxxxxx'
         ],
         False
@@ -230,6 +239,20 @@ test_data = [
     ),
     (
         [
+            '...x...x',
+            '....x.x.',
+            '.....x..',
+            '....x.x.',
+            '...x...x',
+            '........',
+            '........',
+            '........'
+        ],
+        True
+    ),
+
+    (
+        [
             '........',
             '........',
             '..x.....',
@@ -238,6 +261,19 @@ test_data = [
             '....xx..',
             '...x..x.',
             '..x....x'
+        ],
+        True
+    ),
+    (
+        [
+            '........',
+            '........',
+            '..x.x...',
+            '...x....',
+            '..x.x...',
+            '........',
+            '........',
+            '........'
         ],
         True
     ),
@@ -253,6 +289,45 @@ test_data = [
             '........'
         ],
         True
+    ),
+    (
+        [
+            'x.....x.',
+            '.x...x..',
+            '..x.x...',
+            '...x....',
+            '..x.....',
+            '.x...x..',
+            'x.....x.',
+            '........'
+        ],
+        True
+    ),
+    (
+        [
+            '........',
+            '..x..x..',
+            '..x.x...',
+            '...x....',
+            '..x.x...',
+            '.x...x..',
+            '........',
+            '........'
+        ],
+        True
+    ),
+    (
+        [
+            '........',
+            '.x......',
+            '..x...x.',
+            '...x.x..',
+            '...xx...',
+            '...x.x..',
+            '..x...x.',
+            '.x.....x'
+        ],
+        True
     )
 ]
 
@@ -264,5 +339,4 @@ for i in range(len(test_data)):
     print '\n'
 
 nn_testing_data = to_nn_data(test_data)
-print nn
 print 'test_squared_error', nn.get_training_data_squared_error(nn_testing_data)

@@ -23,7 +23,7 @@ class RollingErrorHistory(object):
             return None
 
 def train_until(neural_net, training_data, initial_step=0.1, threshold=0.1):
-    history = RollingErrorHistory(10)
+    history = RollingErrorHistory(6)
 
     current_step = initial_step
     prev_squared_error = neural_net.get_training_data_squared_error(training_data)
