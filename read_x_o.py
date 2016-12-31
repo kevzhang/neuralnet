@@ -1,7 +1,8 @@
 from neural_net.nn import Neuron, NeuralNet, SIGMOID
 from neural_net.trainer import train_until
 import copy, random
-random.seed(42)
+
+random.seed(123)
 
 width = 8
 height = 8
@@ -12,7 +13,7 @@ o_val = 0
 true_val = 1
 false_val = 0
 
-nn = NeuralNet(width * height, 1, [], sigmoid_s=0)
+nn = NeuralNet(width * height, 1, [9], sigmoid_s=0.0)
 
 def to_nn_data(raw_training_data):
     return [(image_to_input(image), [true_val] if result else [false_val]) for (image, result) in raw_training_data]
@@ -117,6 +118,16 @@ training_data.extend(duplicate_and_shift(
     ],
     False
 ))
+training_data.extend(duplicate_and_shift(
+    [
+        'xxxxx',
+        'x...x',
+        'x...x',
+        'x...x',
+        'xxxxx'
+    ],
+    False
+))
 
 num_positive_examples = len([x[1] for x in training_data if x[1]])
 num_negative_examples = len([x[1] for x in training_data if not x[1]])
@@ -129,7 +140,7 @@ def image_to_input(image):
 
 nn_training_data = to_nn_data(training_data)
 print '|training_data|', len(training_data)
-train_until(nn, nn_training_data, initial_step=0.5, threshold=2)
+train_until(nn, nn_training_data, initial_step=0.5, threshold=0.5)
 
 test_data = [
     (
@@ -339,4 +350,4 @@ for i in range(len(test_data)):
     print '\n'
 
 nn_testing_data = to_nn_data(test_data)
-print 'test_squared_error', nn.get_training_data_squared_error(nn_testing_data)
+print 'avg_test_squared_error', nn.get_training_data_squared_error(nn_testing_data) / len(nn_testing_data)
