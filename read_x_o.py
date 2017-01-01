@@ -13,7 +13,7 @@ o_val = 0
 true_val = 1
 false_val = 0
 
-nn = NeuralNet(width * height, 1, [9], sigmoid_s=0.0)
+nn_params = NeuralNet.Params(width * height, 1, [], sigmoid_s=0.0)
 
 def to_nn_data(raw_training_data):
     return [(image_to_input(image), [true_val] if result else [false_val]) for (image, result) in raw_training_data]
@@ -140,7 +140,7 @@ def image_to_input(image):
 
 nn_training_data = to_nn_data(training_data)
 print '|training_data|', len(training_data)
-train_until(nn, nn_training_data, initial_step=0.5, threshold=0.5)
+(nn, err) = train_until(nn_params, nn_training_data, initial_step=0.5, threshold=1)
 
 test_data = [
     (

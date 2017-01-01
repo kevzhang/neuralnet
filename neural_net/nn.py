@@ -49,7 +49,7 @@ class Neuron(object):
         self.activation = self.bias
 
     def __str__(self):
-        return '{' + str(self.activation) + '-' + str([str(con.weight) for con in self.connections]) + '}'
+        return '{' + str(self.bias) + '-' + str([str(con.weight) for con in self.connections]) + '}'
 
 def compute_bias_gradient(args):
     neural_net = args['neural_net']
@@ -57,7 +57,7 @@ def compute_bias_gradient(args):
     step = args['step']
     training_data = args['training_data']
 
-    neuron = neural_net.get_non_input_neurons()[idx]
+    neuron = neural_net.get_neurons()[idx]
     initial_bias = neuron.bias
     # each weight advances step / 128
     neuron.bias += step / 128.0
@@ -90,6 +90,23 @@ class NeuralNet(object):
     sigmoid = None
     weight_provider = None
     bias_provider = None
+
+    class Params(object):
+
+        def __init__(self, num_inputs, num_outputs, hidden_dimensions, sigmoid_p=1.0, sigmoid_s=0.0,
+                weight_provider=random_weight_provider, bias_provider=random_weight_provider):
+            self.num_inputs = num_inputs
+            self.num_outputs = num_outputs
+            self.hidden_dimensions = hidden_dimensions
+            self.sigmoid_p = sigmoid_p
+            self.sigmoid_s = sigmoid_s
+            self.weight_provider = weight_provider
+            self.bias_provider = bias_provider
+
+    @staticmethod     
+    def from_params(params):
+        return NeuralNet(params.num_inputs, params.num_outputs, params.hidden_dimensions, params.sigmoid_p,
+                params.sigmoid_s, params.weight_provider, params.bias_provider)
 
     def __init__(self, num_inputs, num_outputs, hidden_dimensions, sigmoid_p=1.0, sigmoid_s=0.0,
             weight_provider=random_weight_provider, bias_provider=random_weight_provider):
@@ -207,7 +224,7 @@ class NeuralNet(object):
         initial_squared_error = self.get_training_data_squared_error(training_data)
 
         ##### GRADIENT DESCENT ON BIAS #####
-        neurons = self.get_non_input_neurons()
+        neurons = self.get_neurons()
         num_neurons = len(neurons)
         worker_args = []
         for idx in range(num_neurons):
@@ -238,8 +255,10 @@ class NeuralNet(object):
         else:
             return after_bias_gradient_error
 
-    def get_non_input_neurons(self):
+    def get_neurons(self):
         neurons = []
+        for neuron in self.input_layer:
+            neurons.append(neuron)
         for layer in self.hidden_layers:
             for neuron in layer:
                 neurons.append(neuron)
@@ -291,4 +310,4 @@ class NeuralNet(object):
         string += '\n'
         return string
 
-pool = Pool(4)
+pool = Pool(1)
