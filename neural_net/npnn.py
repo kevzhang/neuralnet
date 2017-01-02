@@ -293,4 +293,4 @@ class NeuralNet(object):
         res += '--- --- ---'
         return res
 
-pool = Pool(6)
+pool = Pool(4)
