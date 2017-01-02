@@ -1,4 +1,4 @@
-from neural_net.nn import Neuron, NeuralNet, SIGMOID
+from neural_net.npnn import NeuralNet
 from neural_net.trainer import train_until
 import random
 
@@ -39,10 +39,8 @@ for gate in range(0, 16):
     for i in range(4):
         # defines the input
         inputs = to_digit_list(to_digit_string(i, 2))
-
-        print inputs, '=', nn.intake(inputs)
+        print inputs, '=', nn.intake([inputs])
     print nn
-
 
 print 'avg_squared_errors'
 for (gate, err) in squared_errors:
