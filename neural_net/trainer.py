@@ -1,4 +1,5 @@
 from neural_net.nn import NeuralNet
+from neural_net.npnn import NeuralNet as NpNeuralNet
 
 class RollingErrorHistory(object):
     history = []
@@ -22,8 +23,9 @@ class RollingErrorHistory(object):
         else:
             return None
 
-def train_until(neural_net_params, training_data, initial_step=0.1, threshold=0.1, repetitions=1):
-    neural_nets = [NeuralNet.from_params(neural_net_params) for _ in range(repetitions)]
+def train_until(neural_net_params, training_data, initial_step=0.1, threshold=0.1, repetitions=1, version='np'):
+    neural_nets = [NeuralNet.from_params(neural_net_params) for _ in range(repetitions)]\
+            if version != 'np' else [NpNeuralNet.from_params(neural_net_params) for _ in range(repetitions)]
     trained = [__train_until(nn, training_data, initial_step, threshold) for nn in neural_nets]
     (best_nn, best_error) = trained[0]
     for (nn, error) in trained[1:]:
@@ -41,7 +43,9 @@ def __train_until(neural_net, training_data, initial_step, threshold):
     current_weight_step = initial_step
     current_bias_step = initial_step
 
-    prev_squared_error = neural_net.get_training_data_squared_error(training_data)
+    training_inputs = [training_input for (training_input, _) in training_data]
+    training_outputs = [expected_output for (_, expected_output) in training_data]
+    prev_squared_error = neural_net.get_training_data_squared_error(training_inputs, training_outputs)
     history.record_and_compare(prev_squared_error)
     print 'avg_sq_error', prev_squared_error / num_examples
 

@@ -605,4 +605,8 @@ for i in range(len(test_data)):
     print '\n'
 
 nn_testing_data = [(image_to_input(image), [1] if result else [-1]) for (image, result) in test_data]
-print 'test_squared_error', nn.get_training_data_squared_error(nn_testing_data)
+
+training_inputs = [inpt for (inpt, expected) in nn_testing_data]
+training_outputs = [expected for (inpt, expected) in nn_testing_data]
+
+print 'test_squared_error', nn.get_training_data_squared_error(training_inputs, training_outputs)

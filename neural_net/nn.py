@@ -55,13 +55,12 @@ def compute_bias_gradient(args):
     neural_net = args['neural_net']
     idx = args['neuron_idx']
     step = args['step']
-    training_data = args['training_data']
 
     neuron = neural_net.get_neurons()[idx]
     initial_bias = neuron.bias
     # each weight advances step / 128
     neuron.bias += step / 128.0
-    squared_error = neural_net.get_training_data_squared_error(training_data)
+    squared_error = neural_net.get_training_data_squared_error(args['training_inputs'], args['training_outputs'])
     neuron.bias = initial_bias
     return squared_error
 
@@ -69,13 +68,12 @@ def compute_connection_gradient(args):
     neural_net = args['neural_net']
     idx = args['connection_idx']
     step = args['step']
-    training_data = args['training_data']
 
     connection = neural_net.get_connections()[idx]
     initial_weight = connection.weight
     # each weight advances step / 128
     connection.weight += step / 128.0
-    squared_error = neural_net.get_training_data_squared_error(training_data)
+    squared_error = neural_net.get_training_data_squared_error(args['training_inputs'], args['training_outputs'])
     connection.weight = initial_weight
     return squared_error
 
@@ -168,9 +166,9 @@ class NeuralNet(object):
         self.__reset()
         return output
 
-    def get_training_data_squared_error(self, training_data):
-        expected_and_actual_list = [(expected_outputs, self.intake(inputs)) for (inputs, expected_outputs) in training_data]
-        return NeuralNet.squared_error(expected_and_actual_list)
+    def get_training_data_squared_error(self, training_inputs, training_outputs):
+        actual_outputs = [self.intake(inpt) for inpt in training_inputs]
+        return NeuralNet.squared_error(training_outputs, actual_outputs)
 
     def copy_self(self):
         return copy.deepcopy(self)
@@ -181,7 +179,9 @@ class NeuralNet(object):
             self.__validate_inputs(inputs)
             self.__validate_expected_outputs(expected_outputs)
 
-        initial_squared_error = self.get_training_data_squared_error(training_data)
+        training_inputs = [inpt for (inpt, expected) in training_data]
+        training_outputs = [expected for (inpt, expected) in training_data]
+        initial_squared_error = self.get_training_data_squared_error(training_inputs, training_outputs)
 
         ##### GRADIENT DESCENT ON WEIGHTS #####
         connections = self.get_connections()
@@ -192,7 +192,8 @@ class NeuralNet(object):
                 'neural_net': self,
                 'connection_idx': idx,
                 'step': step,
-                'training_data': training_data
+                'training_inputs': training_inputs,
+                'training_outputs': training_outputs
             })
 
         connection_gradients = [initial_squared_error - sq_err for sq_err in pool.map(compute_connection_gradient, worker_args)]
@@ -206,7 +207,7 @@ class NeuralNet(object):
         prev_weights = [connections[i].weight for i in range(num_connections)]
         for i in xrange(num_connections):
             connections[i].weight += connection_gradients[i] * adjustment
-        after_edge_gradient_error = self.get_training_data_squared_error(training_data)
+        after_edge_gradient_error = self.get_training_data_squared_error(training_inputs, training_outputs)
         if (after_edge_gradient_error >= initial_squared_error):
             print 'Resetting weights due to regression'
             for i in xrange(num_connections):
@@ -221,7 +222,9 @@ class NeuralNet(object):
             self.__validate_inputs(inputs)
             self.__validate_expected_outputs(expected_outputs)
 
-        initial_squared_error = self.get_training_data_squared_error(training_data)
+        training_inputs = [inpt for (inpt, expected) in training_data]
+        training_outputs = [expected for (inpt, expected) in training_data]
+        initial_squared_error = self.get_training_data_squared_error(training_inputs, training_outputs)
 
         ##### GRADIENT DESCENT ON BIAS #####
         neurons = self.get_neurons()
@@ -232,7 +235,8 @@ class NeuralNet(object):
                 'neural_net': self,
                 'neuron_idx': idx,
                 'step': step,
-                'training_data': training_data
+                'training_inputs': training_inputs,
+                'training_outputs': training_outputs
             })
 
         bias_gradients = [initial_squared_error - sq_err for sq_err in pool.map(compute_bias_gradient, worker_args)]
@@ -246,7 +250,7 @@ class NeuralNet(object):
         prev_bias = [neurons[i].bias for i in xrange(num_neurons)]
         for i in xrange(num_neurons):
             neurons[i].bias += bias_gradients[i] * adjustment
-        after_bias_gradient_error = self.get_training_data_squared_error(training_data)
+        after_bias_gradient_error = self.get_training_data_squared_error(training_inputs, training_outputs)
         if (after_bias_gradient_error >= initial_squared_error):
             print 'Resetting bias due to regression'
             for i in xrange(num_neurons):
@@ -289,9 +293,10 @@ class NeuralNet(object):
         return math.sqrt(sum([(expected - actual) ** 2 for (expected, actual) in zip(expected_outputs, actual_outputs)]))
 
     @staticmethod
-    def squared_error(expected_and_actual_list):
-        return sum([NeuralNet.error(expected_outputs, actual_outputs) ** 2\
-            for (expected_outputs, actual_outputs) in expected_and_actual_list])
+    def squared_error(expected_outputs, actual_outputs):
+        assert len(expected_outputs) == len(actual_outputs)
+        return sum([NeuralNet.error(expected, actual) ** 2\
+            for (expected, actual) in zip(expected_outputs, actual_outputs)])
 
     def __str__(self):
         string = 'input ({0}): '.format(len(self.input_layer))
@@ -310,4 +315,4 @@ class NeuralNet(object):
         string += '\n'
         return string
 
-pool = Pool(1)
+pool = Pool(4)

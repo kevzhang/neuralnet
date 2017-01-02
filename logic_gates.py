@@ -32,7 +32,9 @@ for gate in range(0, 16):
 
     (nn, err) = train_until(nn_params, training_data, initial_step=0.1, threshold=0.01, repetitions=6)
 
-    squared_errors.append((to_digit_string(gate, 4), nn.get_training_data_squared_error(training_data) / len(training_data)))
+    training_inputs = [training_input for (training_input, _) in training_data]
+    training_outputs = [expected_output for (_, expected_output) in training_data]
+    squared_errors.append((to_digit_string(gate, 4), nn.get_training_data_squared_error(training_inputs, training_outputs) / len(training_data)))
 
     for i in range(4):
         # defines the input

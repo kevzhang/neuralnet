@@ -1,5 +1,5 @@
 import unittest, math
-from neural_net.nn import Neuron, NeuralNet, SIGMOID
+from neural_net.nn import NeuralNet, SIGMOID
 
 def constant_weight_provider():
     return 1
@@ -45,7 +45,7 @@ class TestNeuralNet(unittest.TestCase):
     def test_squared_error_calculation(self):
         expected_list = [[1,2,3], [2,3,4]]
         actual_list = [[3,2,1], [3,4,5]]
-        self.assertAlmostEqual(NeuralNet.squared_error(zip(expected_list, actual_list)), 11, 10)
+        self.assertAlmostEqual(NeuralNet.squared_error(expected_list, actual_list), 11, 10)
 
 if __name__ == '__main__':
     unittest.main()
